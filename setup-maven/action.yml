@@ -1,0 +1,10 @@
+name: 'Setup Maven 3'
+description: 'Install a specific version of Apache Maven and add it to the PATH'
+author: 'aahmed-se'
+inputs:
+  maven-version:
+    description: 'Version Spec of the version to use.  Examples: 10.x, 10.15.1, >=10.15.0'
+    default: '3.6.1'
+runs:
+  using: 'node12'
+  main: 'lib/setup-maven.js'

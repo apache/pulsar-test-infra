@@ -4,4 +4,6 @@ This repo is used for keeping all the scripts and github actions for running Pul
 
 ## Github Actions
 
+- [diff-only](diff-only/README.md) action
 - [pulsarbot](pulsarbot/README.md)
+- [setup-maven](setup-maven/README.md)
