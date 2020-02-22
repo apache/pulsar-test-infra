@@ -7,9 +7,8 @@ COMMITS=$(jq '.pull_request.commits' "${GITHUB_EVENT_PATH}")
 echo "COMMITS: ${COMMITS}"
 
 git --version
-git rev-parse --abbrev-ref HEAD
 
-CHANGED_DIRS=$(git diff --dirstat=files,0 HEAD~${COMMITS} | awk '{ print $2 }')
+CHANGED_DIRS=$(git diff --dirstat=files,0 ${GITHUB_SHA}~${COMMITS} | awk '{ print $2 }')
 echo "CHANGED_DIRS are : ${CHANGED_DIRS}"
 
 found_changed_dir_not_in_target_dirs="no"
