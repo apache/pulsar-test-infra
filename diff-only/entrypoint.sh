@@ -9,7 +9,7 @@ echo "COMMITS: ${COMMITS}"
 git --version
 git rev-parse --abbrev-ref HEAD
 
-CHANGED_DIRS=$(git diff --dirstat=files,0 HEAD~${COMMITS} | awk '{ print $2 }')
+CHANGED_DIRS=$(git diff --name-only HEAD~${COMMITS} | awk -F "/*[^/]*/*$" '{ print ($1 == "" ? "." : $1); }' | sort | uniq)
 echo "CHANGED_DIRS are : ${CHANGED_DIRS}"
 
 found_changed_dir_not_in_target_dirs="no"
