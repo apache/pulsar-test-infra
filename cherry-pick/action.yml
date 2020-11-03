@@ -1,0 +1,25 @@
+name: 'cherry-pick'
+description: 'Automatically cherry-pick PRs for apache pulsar'
+inputs:
+  type:
+    description: 'Give a prompt or execute the cherry-pick, available options [cherry-pick] or [prompt-comment]'
+    required: true
+    default: 'cherry-pick'
+  github_user:
+    description: 'The github user who to do the commit the changes'
+    required: true
+  github_email:
+    description: 'The github user email who to do the commit changes'
+    required: true
+  github_repos:
+    description: 'The '
+    required: true
+    default: 'apache/pulsar'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.type }}
+    - ${{ inputs.github_user }}
+    - ${{ inputs.github_email }}
+    - ${{ inputs.github_repos }}
