@@ -86,9 +86,9 @@ pr_close_prompt() {
         users="${users}, @${review}"
     done
     if [[ "" == ${users} ]]; then
-        PROMPT_SENTENCE="Hey. If you want to cherry-pick this pr to a target branch, please comments '/pulsarbot, please cherry-pick this pr to branch-x.y'."
+        PROMPT_SENTENCE="Hey. If you want to cherry-pick this pr to a target branch, please comments '/pulsarbot cherry-pick to branch-x.y'."
     else
-        PROMPT_SENTENCE="Hey, ${users}. If you want to cherry-pick this pr to a target branch, please comments '/pulsarbot, please cherry-pick this pr to branch-x.y'."
+        PROMPT_SENTENCE="Hey, ${users}. If you want to cherry-pick this pr to a target branch, please comments '/pulsarbot cherry-pick to branch-x.y'."
     fi
 
     if [[ "" == "${GITHUB_TOKEN}" ]]; then
