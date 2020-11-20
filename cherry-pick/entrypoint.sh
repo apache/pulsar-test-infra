@@ -59,7 +59,7 @@ cherrypick() {
     git checkout ${TARGET_BRANCH}
     git checkout -b ${BOT_BRANCH_NAME}
     git status
-    git cherry-pick "${PR_MERGE_COMMIT_SHA}" -X Recursive
+    git cherry-pick -x "${PR_MERGE_COMMIT_SHA}" -X Recursive
     status=$?
     if [[ ${status} != 0 ]]; then
         git add .
@@ -71,10 +71,16 @@ cherrypick() {
 
 pr_close_prompt_args() {
     readonly PR_NUMBER=$(jq -r '.number' "${GITHUB_EVENT_PATH}")
-    readonly PR_INFO=$(curl -s --request GET \
-        --url https://api.github.com/repos/${GITHUB_REPOS}/pulls/${PR_NUMBER} \
-        --header "Authorization: token ${GITHUB_TOKEN}" \
-        --header 'Accept: application/vnd.github.sailor-v-preview+json')
+    if [[ "" == "${GITHUB_TOKEN}" ]]; then
+        readonly PR_INFO=$(curl -s --request GET \
+            --url https://api.github.com/repos/${GITHUB_REPOS}/pulls/${PR_NUMBER} \
+            --header 'Accept: application/vnd.github.sailor-v-preview+json')
+    else
+       readonly PR_INFO=$(curl -s --request GET \
+            --url https://api.github.com/repos/${GITHUB_REPOS}/pulls/${PR_NUMBER} \
+            --header "Authorization: token ${GITHUB_TOKEN}" \
+            --header 'Accept: application/vnd.github.sailor-v-preview+json')
+    fi
 }
 
 pr_close_prompt() {
