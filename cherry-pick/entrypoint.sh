@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -x
-
 cat ${GITHUB_EVENT_PATH}
 
 GITHUB_TOKEN=${GITHUB_TOKEN:-""}
