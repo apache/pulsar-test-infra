@@ -9,30 +9,41 @@ echo "COMMITS: ${COMMITS}"
 git --version
 git rev-parse --abbrev-ref HEAD
 
-CHANGED_DIRS=$(git diff --name-only HEAD~${COMMITS} | awk -F "/*[^/]*/*$" '{ print ($1 == "" ? "." : $1); }' | sort | uniq)
-echo "CHANGED_DIRS are : ${CHANGED_DIRS}"
+if [[ $COMMITS -gt 0 ]]; then
+    FIRST_COMMIT=$(git rev-parse HEAD~${COMMITS} 2> /dev/null)
+    if [ $? -eq 0 ]; then
+        CHANGED_DIRS=$(git diff --name-only $FIRST_COMMIT | awk -F "/*[^/]*/*$" '{ print ($1 == "" ? "." : $1); }' | sort | uniq)
+        echo "CHANGED_DIRS are : ${CHANGED_DIRS}"
 
-found_changed_dir_not_in_target_dirs="no"
-for changed_dir in ${CHANGED_DIRS}
-do
-    matched="no"
-    for target_dir in "${TARGET_DIRS[@]}"
-    do
-        if [[ ${changed_dir} == "${target_dir}"* ]]; then
-            matched="yes"
-            break
+        found_changed_dir_not_in_target_dirs="no"
+        for changed_dir in ${CHANGED_DIRS}
+        do
+            matched="no"
+            for target_dir in "${TARGET_DIRS[@]}"
+            do
+                if [[ ${changed_dir} == "${target_dir}"* ]]; then
+                    matched="yes"
+                    break
+                fi
+            done
+            if [[ ${matched} == "no" ]]; then
+                found_changed_dir_not_in_target_dirs="yes"
+                break
+            fi
+        done
+
+        if [[ ${found_changed_dir_not_in_target_dirs} == "yes" ]]; then
+            echo "Changes ${CHANGED_DIRS} not only in $*, setting 'changed_only' to 'no'"
+            echo ::set-output name=changed_only::no
+        else
+            echo "Changes ${CHANGED_DIRS} only in $*, setting 'changed_only' to 'yes'"
+            echo ::set-output name=changed_only::yes
         fi
-    done
-    if [[ ${matched} == "no" ]]; then
-        found_changed_dir_not_in_target_dirs="yes"
-        break
+    else
+        echo "Cannot find first commit. Setting 'changed_only' to 'no'."
+        echo ::set-output name=changed_only::no
     fi
-done
-
-if [[ ${found_changed_dir_not_in_target_dirs} == "yes" ]]; then
-    echo "Changes ${CHANGED_DIRS} not only in $*, setting 'changed_only' to 'no'"
-    echo ::set-output name=changed_only::no
 else
-    echo "Changes ${CHANGED_DIRS} only in $*, setting 'changed_only' to 'yes'"
-    echo ::set-output name=changed_only::yes
+    echo "Cannot find number of commits in pull_request. Setting 'changed_only' to 'no'."
+    echo ::set-output name=changed_only::no
 fi
