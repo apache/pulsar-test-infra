@@ -6,6 +6,7 @@ cat ${GITHUB_EVENT_PATH}
 COMMENT_BODY=$(jq -r '.comment.body' "${GITHUB_EVENT_PATH}")
 
 BOT_COMMAND_PREFIX="/pulsarbot"
+BOT_TARGET_REPOSITORY=${GITHUB_REPOSITORY:-"apache/pulsar"}
 
 if [[ ${COMMENT_BODY} != "${BOT_COMMAND_PREFIX}"* ]]; then
     echo "Not a pulsarbot command, skipping it ..."
@@ -37,11 +38,11 @@ fi
 PR_NUM=$(jq -r '.issue.number' "${GITHUB_EVENT_PATH}")
 
 # get head sha
-curl -s -H "Accept: application/vnd.github.antiope-preview+json" "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/ref/pull/${PR_NUM}/head" > result-headsha.txt
+curl -s -H "Accept: application/vnd.github.antiope-preview+json" "https://api.github.com/repos/${BOT_TARGET_REPOSITORY}/git/ref/pull/${PR_NUM}/head" > result-headsha.txt
 HEAD_SHA=$(jq -r '.object.sha' result-headsha.txt)
 
 # get checkrun results
-curl -s -H "Accept: application/vnd.github.antiope-preview+json" "https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs" > result-check-runs.txt
+curl -s -H "Accept: application/vnd.github.antiope-preview+json" "https://api.github.com/repos/${BOT_TARGET_REPOSITORY}/commits/${HEAD_SHA}/check-runs" > result-check-runs.txt
 
 # find the failures 
 for row in $(cat result-check-runs.txt | jq -r '.check_runs[] | select(.status == "completed" and (.conclusion == "failure" or .conclusion == "cancelled")) | @base64'); do
@@ -53,7 +54,7 @@ for row in $(cat result-check-runs.txt | jq -r '.check_runs[] | select(.status =
     check_suite_id=$(echo $(_jq '.check_suite.id'))
     if [[ "${CHECK_NAME}" == "_all" || "${CHECK_NAME}" == "${name}" ]]; then
         echo "rerun action ${name}, check_suite_id = ${check_suite_id}"
-        curl -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.antiope-preview+json" -X POST "https://api.github.com/repos/${GITHUB_REPOSITORY}/check-suites/${check_suite_id}/rerequest"
+        curl -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.antiope-preview+json" -X POST "https://api.github.com/repos/${BOT_TARGET_REPOSITORY}/check-suites/${check_suite_id}/rerequest"
     else
         echo "Expect ${CHECK_NAME} but skip action ${name}, check_suite_id = ${check_suite_id}"
     fi
