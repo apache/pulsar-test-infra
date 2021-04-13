@@ -42,7 +42,7 @@ curl -s -H "Accept: application/vnd.github.antiope-preview+json" "https://api.gi
 HEAD_SHA=$(jq -r '.object.sha' result-headsha.txt)
 
 # get checkrun results
-curl -s -H "Accept: application/vnd.github.antiope-preview+json" "https://api.github.com/repos/${BOT_TARGET_REPOSITORY}/commits/${HEAD_SHA}/check-runs" > result-check-runs.txt
+curl -s -H "Accept: application/vnd.github.antiope-preview+json" "https://api.github.com/repos/${BOT_TARGET_REPOSITORY}/commits/${HEAD_SHA}/check-runs?per_page=100" > result-check-runs.txt
 
 # find the failures 
 for row in $(cat result-check-runs.txt | jq -r '.check_runs[] | select(.status == "completed" and (.conclusion == "failure" or .conclusion == "cancelled")) | @base64'); do
