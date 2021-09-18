@@ -1,0 +1,37 @@
+name: 'Doc-label-check'
+description: 'Automate labeling on issues and pull requests'
+author: 'fengtao'
+branding:
+  color: 'green'
+  icon: 'tag'
+
+inputs:
+  github-token:
+    description: 'GitHub token'
+    required: true
+
+  label-pattern:
+    description: >
+      Pattern (regular expression) to extract label states and names (e.g. '- \[(.*?)\] ?`(.+?)`').
+    required: true
+  
+  bot-name:
+    description: The bot name
+    required: true
+
+  offset:
+    description: >
+      Only issues and pull requests updated at or after this offset (from the current time) will be labeled.
+      Required only when running this action on the schedule event.
+    required: false
+    default: '1m' # means one month
+
+  quiet:
+    description: >
+      Suppress logging output. Must be either "true" or "false"
+    required: false
+    default: 'false'
+
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
