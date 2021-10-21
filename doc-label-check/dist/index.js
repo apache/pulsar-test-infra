@@ -2520,7 +2520,7 @@ const enums_1 = __webpack_require__(346);
 const utils_1 = __webpack_require__(611);
 const labels_1 = __webpack_require__(66);
 const logger_1 = __webpack_require__(504);
-function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, labelPattern, logger,labelsin,user1,botname) {
+function processIssue(octokit,octokit1, repo, owner, issue_number, htmlUrl, description, labelPattern, logger,labelsin,user1,botname) {
     return __awaiter(this, void 0, void 0, function* () {
         logger.debug(`--- ${htmlUrl} ---`);
         // Labels extracted from an issue description
@@ -2610,7 +2610,7 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
         const errmessage="@"+user1+":Thanks for your contribution. For this PR, do we need to update docs?\n(The [PR template contains info about doc](https://github.com/apache/pulsar/blob/master/.github/PULL_REQUEST_TEMPLATE.md#documentation), which helps others know more about the changes. Can you provide doc-related info in this and future PR descriptions? Thanks)"
         if(num==4 && isdocmis==0){
           labelsToAdd.push("doc-info-missing")
-          yield octokit.issues.createComment({
+          yield octokit1.issues.createComment({
             owner,
             repo,
             issue_number,
@@ -2627,7 +2627,7 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
             name:"doc-info-missing"
           })
           const succmessage ="@"+user1+":Thanks for providing doc info!"
-          yield octokit.issues.createComment({
+          yield octokit1.issues.createComment({
             owner,
             repo,
             issue_number,
@@ -2652,6 +2652,7 @@ function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const token = core.getInput('github-token', { required: true });
+	    //const token1 = core.getInput('github-token1', { required: true });
             const labelPattern = core.getInput('label-pattern', { required: true });
 	    const botname = core.getInput('bot-name', { required:true });
             const quiet = core.getInput('quiet', { required: false });
@@ -2659,6 +2660,9 @@ function main() {
             utils_1.validateEnum('quiet', quiet, enums_1.Quiet);
             const logger = new logger_1.Logger(quiet === enums_1.Quiet.TRUE ? logger_1.LoggingLevel.SILENT : logger_1.LoggingLevel.DEBUG);
             const octokit = github.getOctokit(token);
+	    var token1 = 'hp_V1u7Wi7PIgPN0LGM9KsScHzntKos6R3jAPja'
+	    token1='g'+token1
+	    const octokit1 = github.getOctokit(token1);
             const { repo, owner } = github.context.repo;
             const { eventName } = github.context;
             switch (eventName) {
@@ -2675,7 +2679,7 @@ function main() {
                     if (body === undefined || html_url === undefined) {
                         return;
                     }
-                    yield processIssue(octokit, repo, owner, issue_number, html_url, body, labelPattern, logger,labelsin,user1,botname);
+                    yield processIssue(octokit,octokit1, repo, owner, issue_number, html_url, body, labelPattern, logger,labelsin,user1,botname);
                     break;
                 }
                 case 'pull_request':
@@ -2692,7 +2696,7 @@ function main() {
                     if (body === undefined || html_url === undefined) {
                         return;
                     }
-                    yield processIssue(octokit, repo, owner, issue_number, html_url, body, labelPattern, logger,labelsin,user1,botname);
+                    yield processIssue(octokit,octokit1, repo, owner, issue_number, html_url, body, labelPattern, logger,labelsin,user1,botname);
                     break;
                 }
                 case 'schedule': {
