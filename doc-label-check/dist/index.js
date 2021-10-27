@@ -2588,11 +2588,11 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
 
         const labelsToAdd = labelsToProcess.filter(shouldAdd).map(labels_1.getName);
         var issuelabels=utils_1.removeDuplicates(labelsToAdd.concat(labelsin));
-	var corrent=0
-	console.log(issuelabels);
-	console.log(labelsToRemove);
-	if(labelsToRemove.length!=0){
-		issuelabels=issuelabels.filter((x)=>labelsToRemove.some((item=>x!=item)))}
+	    var corrent=0
+	    console.log(issuelabels);
+	    console.log(labelsToRemove);
+	    if(labelsToRemove.length!=0){
+		    issuelabels=issuelabels.filter((x)=>labelsToRemove.some((item=>x!=item)))}
         console.log("-----------------------");
         console.log(issuelabels);
         console.log("-----------------------");
@@ -2600,16 +2600,16 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
         var isdocmis=0
         for(let index=0;index<Labels.length;index++){
           if(issuelabels.includes(Labels[index])){
-            console.log(Labels[index],"issue exists");
-            if(Labels[index]=='doc-info-missing'){
-              isdocmis=1
-            }
+              console.log(Labels[index],"issue exists");
+                if(Labels[index]=='doc-info-missing'){
+                    isdocmis=1
+                }
           }else{
             num=num+1
           }
-	  if(labelsToAdd.includes(Labels[index])){
-	    corrent=1;
-	  }
+	        if(labelsToAdd.includes(Labels[index])){
+	        corrent=1;
+        }
         }
         const errmessage="@"+user1+":Thanks for your contribution. For this PR, do we need to update docs?\n(The [PR template contains info about doc](https://github.com/apache/pulsar/blob/master/.github/PULL_REQUEST_TEMPLATE.md#documentation), which helps others know more about the changes. Can you provide doc-related info in this and future PR descriptions? Thanks)"
         if(num==4 && isdocmis==0){
@@ -2648,6 +2648,14 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
                 issue_number,
                 labels: labelsToAdd,
             });
+        }
+        if(corrent==1){
+            yield octokit.issues.removeLabel({
+                owner,
+                repo,
+                issue_number,
+                name:"doc-info-missing"
+              })
         }
     });
 }
