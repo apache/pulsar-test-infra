@@ -2661,7 +2661,7 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
                 name:"doc-info-missing"
               })
             }catch{
-              continue
+              logger.debug('no doc info missing')
             }
               yield octokit.issues.createComment({
                 owner,
