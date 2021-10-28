@@ -2525,6 +2525,9 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
         logger.debug(`--- ${htmlUrl} ---`);
         // Labels extracted from an issue description
 	      logger.debug(labelsin)
+        if (labelsin.includes('doc-added')){
+          return
+        }
         const Labels=['doc','doc-required','no-need-doc','doc-info-missing']
         const labels = labels_1.extractLabels(description, labelPattern);
         const succmessage ="@"+user1+":Thanks for providing doc info!";
@@ -2548,7 +2551,6 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
         const labelsToIgnore = utils_1.removeDuplicates(listEventsData
             .filter(event => utils_1.isLabelEvent(event) && utils_1.isCreatedByUser(event))
             .map(({ label }) => label && label.name));
-	      logger.debug(listEventsData)
         logger.debug('Labels to ignore:');
         logger.debug(utils_1.formatStrArray(labelsToIgnore));
         // Labels registered in a repository
@@ -2699,8 +2701,6 @@ function main() {
                 case 'pull_request':
                 case 'pull_request_target': {
                     const { pull_request } = github.context.payload;
-                    logger.debug(github.context)
-                    logger.debug('111111111111111111')
                     if(pull_request.merged==true)
                     {
                       return
