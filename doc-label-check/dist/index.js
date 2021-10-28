@@ -2527,12 +2527,13 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
 	      logger.debug(labelsin)
         const Labels=['doc','doc-required','no-need-doc','doc-info-missing']
         const labels = labels_1.extractLabels(description, labelPattern);
+        const succmessage ="@"+user1+":Thanks for providing doc info!";
         octokit.issues.addAssignees({
           owner,
           repo,
           issue_number,
           assignees:user1,
-      });
+        });
         octokit.issues.listEvents({
             owner,
             repo,
@@ -2601,6 +2602,7 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
         for(let index=0;index<Labels.length;index++){
           if(issuelabels.includes(Labels[index])){
               console.log(Labels[index],"issue exists");
+                
                 if(Labels[index]=='doc-info-missing'){
                     isdocmis=1
                 }
@@ -2630,7 +2632,6 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
             issue_number,
             name:"doc-info-missing"
           })
-          const succmessage ="@"+user1+":Thanks for providing doc info!"
           yield octokit.issues.createComment({
             owner,
             repo,
@@ -2655,6 +2656,12 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
                 repo,
                 issue_number,
                 name:"doc-info-missing"
+              })
+              yield octokit.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body:succmessage
               })
         }
     });
@@ -2692,6 +2699,8 @@ function main() {
                 case 'pull_request':
                 case 'pull_request_target': {
                     const { pull_request } = github.context.payload;
+                    logger.debug(github.context.payload)
+                    logger.debug('111111111111111111')
                     if (pull_request === undefined) {
                         return;
                     }
