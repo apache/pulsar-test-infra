@@ -2701,6 +2701,10 @@ function main() {
                     const { pull_request } = github.context.payload;
                     logger.debug(github.context)
                     logger.debug('111111111111111111')
+                    if(pull_request.merged==true)
+                    {
+                      return
+                    }
                     if (pull_request === undefined) {
                         return;
                     }
