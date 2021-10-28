@@ -2653,12 +2653,16 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
             });
         }
         if(corrent==1){
+          try{
             yield octokit.issues.removeLabel({
                 owner,
                 repo,
                 issue_number,
                 name:"doc-info-missing"
               })
+            }catch{
+              continue
+            }
               yield octokit.issues.createComment({
                 owner,
                 repo,
