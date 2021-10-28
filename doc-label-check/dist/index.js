@@ -2525,14 +2525,18 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
         logger.debug(`--- ${htmlUrl} ---`);
         // Labels extracted from an issue description
 	      logger.debug(labelsin)
+        if (labelsin.includes('doc-added')){
+          return
+        }
         const Labels=['doc','doc-required','no-need-doc','doc-info-missing']
         const labels = labels_1.extractLabels(description, labelPattern);
+        const succmessage ="@"+user1+":Thanks for providing doc info!";
         octokit.issues.addAssignees({
           owner,
           repo,
           issue_number,
           assignees:user1,
-      });
+        });
         octokit.issues.listEvents({
             owner,
             repo,
@@ -2547,7 +2551,6 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
         const labelsToIgnore = utils_1.removeDuplicates(listEventsData
             .filter(event => utils_1.isLabelEvent(event) && utils_1.isCreatedByUser(event))
             .map(({ label }) => label && label.name));
-	      logger.debug(listEventsData)
         logger.debug('Labels to ignore:');
         logger.debug(utils_1.formatStrArray(labelsToIgnore));
         // Labels registered in a repository
@@ -2630,7 +2633,6 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
             issue_number,
             name:"doc-info-missing"
           })
-          const succmessage ="@"+user1+":Thanks for providing doc info!"
           yield octokit.issues.createComment({
             owner,
             repo,
@@ -2650,11 +2652,21 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
             });
         }
         if(corrent==1){
+          try{
             yield octokit.issues.removeLabel({
                 owner,
                 repo,
                 issue_number,
                 name:"doc-info-missing"
+              })
+            }catch{
+              logger.debug('no doc info missing')
+            }
+              yield octokit.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body:succmessage
               })
         }
     });
@@ -2692,6 +2704,10 @@ function main() {
                 case 'pull_request':
                 case 'pull_request_target': {
                     const { pull_request } = github.context.payload;
+                    if(pull_request.merged==true)
+                    {
+                      return
+                    }
                     if (pull_request === undefined) {
                         return;
                     }
