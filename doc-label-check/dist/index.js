@@ -2559,7 +2559,6 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
             repo,
         });
         logger.debug("-------------------------------")
-        logger.debug(labelsForRepoData)
         const labelsForRepo = labelsForRepoData.map(labels_1.getName);
         const labelsToProcess = labels.filter(({ name }) => labelsForRepo.includes(name)&& !labelsToIgnore.includes(name));
         // Labels that are already applied on an issue
