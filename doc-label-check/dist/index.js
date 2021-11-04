@@ -2568,6 +2568,7 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
             issue_number,
         });
         const labelsOnIssue = labelsOnIssueResp.data.map(labels_1.getName);
+        logger.debug(labelsOnIssue)
         logger.debug('Labels to process:');
         logger.debug(utils_1.formatStrArray(labelsToProcess.map(labels_1.formatLabel)));
         // Remove labels
@@ -2593,8 +2594,6 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
         logger.debug(labelsToAdd)
         var issuelabels=utils_1.removeDuplicates(labelsToAdd.concat(labelsin));
 	    var corrent=0
-	    console.log(issuelabels);
-	    console.log(labelsToRemove);
 	    if(labelsToRemove.length!=0){
 		    issuelabels=issuelabels.filter((x)=>labelsToRemove.some((item=>x!=item)))}
         console.log("-----------------------");
