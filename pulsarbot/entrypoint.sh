@@ -37,25 +37,38 @@ fi
 
 PR_NUM=$(jq -r '.issue.number' "${GITHUB_EVENT_PATH}")
 
-# get head sha
-curl -s -H "Accept: application/vnd.github.antiope-preview+json" "https://api.github.com/repos/${BOT_TARGET_REPOSITORY}/git/ref/pull/${PR_NUM}/head" > result-headsha.txt
-HEAD_SHA=$(jq -r '.object.sha' result-headsha.txt)
+function github_get() {
+    path="$1"
+    github_client "https://api.github.com/repos/${BOT_TARGET_REPOSITORY}${path}"
+}
 
-# get checkrun results
-curl -s -H "Accept: application/vnd.github.antiope-preview+json" "https://api.github.com/repos/${BOT_TARGET_REPOSITORY}/commits/${HEAD_SHA}/check-runs?per_page=100" > result-check-runs.txt
+function github_client() {
+    curl -s -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.v3+json" "$@"
+}
+
+# get head sha
+PR_JSON="$(github_get "/pulls/${PR_NUM}")"
+HEAD_SHA=$(printf "%s" "${PR_JSON}" | jq -r .head.sha)
+PR_BRANCH=$(printf "%s" "${PR_JSON}" | jq -r .head.ref)
+PR_USER=$(printf "%s" "${PR_JSON}" | jq -r .head.user.login)
+
+function get_runs() {
+    status="${1:-failure}"
+    # API reference https://docs.github.com/en/rest/reference/actions#list-workflow-runs-for-a-repository
+    github_get "/actions/runs?actor=${PR_USER}&branch=${PR_BRANCH}&status=${status}&per_page=100" | jq -r --arg head_sha "${HEAD_SHA}" '.workflow_runs[] | select(.head_sha==$head_sha) | .url'
+}
 
 # find the failures 
-for row in $(cat result-check-runs.txt | jq -r '.check_runs[] | select(.status == "completed" and (.conclusion == "failure" or .conclusion == "cancelled")) | @base64'); do
-    _jq() {
-        echo ${row} | base64 --decode | jq -r ${1}
-    }
-
-    name=$(echo $(_jq '.name'))
-    check_suite_id=$(echo $(_jq '.check_suite.id'))
-    if [[ "${CHECK_NAME}" == "_all" || "${CHECK_NAME}" == "${name}" ]]; then
-        echo "rerun action ${name}, check_suite_id = ${check_suite_id}"
-        curl -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.antiope-preview+json" -X POST "https://api.github.com/repos/${BOT_TARGET_REPOSITORY}/check-suites/${check_suite_id}/rerequest"
+FAILED_URLS=$(get_runs failure)
+CANCELLED_URLS=$(get_runs cancelled)
+for url in $FAILED_URLS $CANCELLED_URLS; do
+    name=$(github_client "$url"|jq -r '.name')
+    if [[ "${CHECK_NAME}" == "_all" || "${name}" == *"${CHECK_NAME}"* ]]; then
+        echo "rerun-failed-jobs for '${name}' ($url)"
+        # use https://docs.github.com/en/rest/reference/actions#re-run-failed-jobs-from-a-workflow-run
+        # to rerun only the failed jobs
+        github_client -X POST "${url}/rerun-failed-jobs"
     else
-        echo "Expect ${CHECK_NAME} but skip action ${name}, check_suite_id = ${check_suite_id}"
+        echo "Expect ${CHECK_NAME}, skipping build job '${name}' ($url)"
     fi
 done
