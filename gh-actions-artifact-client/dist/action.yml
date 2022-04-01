@@ -1,0 +1,8 @@
+name: 'GitHub Actions Artifact client'
+description: 'Install command line GitHub Actions Artifact client'
+author: 'Lari Hotari'
+branding:
+  icon: 'terminal'
+runs:
+  using: 'node16'
+  main: 'install.js'

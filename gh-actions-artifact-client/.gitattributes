@@ -1,2 +1,2 @@
-dist/*.js -diff linguist-generated=true
-dist/*.js.map -diff linguist-generated=true
+dist/index.js -diff linguist-generated=true
+dist/index.js.map -diff linguist-generated=true
