@@ -49,26 +49,28 @@ function github_client() {
 # get head sha
 PR_JSON="$(github_get "/pulls/${PR_NUM}")"
 HEAD_SHA=$(printf "%s" "${PR_JSON}" | jq -r .head.sha)
-PR_BRANCH=$(printf "%s" "${PR_JSON}" | jq -r .head.ref)
-PR_USER=$(printf "%s" "${PR_JSON}" | jq -r .head.user.login)
 
-function get_runs() {
-    status="${1:-failure}"
-    # API reference https://docs.github.com/en/rest/reference/actions#list-workflow-runs-for-a-repository
-    github_get "/actions/runs?actor=${PR_USER}&branch=${PR_BRANCH}&status=${status}&per_page=100" | jq -r --arg head_sha "${HEAD_SHA}" '.workflow_runs[] | select(.head_sha==$head_sha) | .url'
+function get_failed_checks() {
+    github_get "/commits/${HEAD_SHA}/check-runs?per_page=100" | jq -r '.check_runs[] | select(.status == "completed" and (.conclusion == "failure" or .conclusion == "cancelled")) | @base64'
 }
 
 # find the failures 
-FAILED_URLS=$(get_runs failure)
-CANCELLED_URLS=$(get_runs cancelled)
-for url in $FAILED_URLS $CANCELLED_URLS; do
-    name=$(github_client "$url"|jq -r '.name')
+FAILED_CHECKS=$(get_failed_checks)
+for row in $FAILED_CHECKS; do
+    _jq() {
+        echo "${row}" | base64 --decode | jq -r ${1}
+    }
+
+    name=$(_jq '.name')
+    id=$(_jq '.id')
+    details_url=$(_jq '.details_url')
+
     if [[ "${CHECK_NAME}" == "_all" || "${name}" == *"${CHECK_NAME}"* ]]; then
-        echo "rerun-failed-jobs for '${name}' ($url)"
+        echo "rerun-failed-jobs for '${name}' ($details_url)"
         # use https://docs.github.com/en/rest/reference/actions#re-run-failed-jobs-from-a-workflow-run
         # to rerun only the failed jobs
-        github_client -X POST "${url}/rerun-failed-jobs"
+        github_client -X POST "https://api.github.com/repos/${BOT_TARGET_REPOSITORY}/actions/runs/${id}/rerun-failed-jobs"
     else
-        echo "Expect ${CHECK_NAME}, skipping build job '${name}' ($url)"
+        echo "Expect ${CHECK_NAME}, skipping build job '${name}' ($details_url)"
     fi
 done
