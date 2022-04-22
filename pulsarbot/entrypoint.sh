@@ -67,7 +67,16 @@ function get_runs() {
 
 # take the last attempt for each workflow to prevent restarting old runs
 function filter_oldruns() {
-    awk -F, '{ if (NR > 1 && LAST != null && LAST != $1) {print LASTLINE; print $0; LAST=null; LASTLINE=null} else { LAST = $1;LASTLINE = $0} } END { if (LASTLINE != null) { print LASTLINE } }'
+    awk '
+    BEGIN { FPAT="([^,]+)|(\"[^\"]+\")" }
+    { 
+        if (NR > 1 && LAST != null && LAST != $1) {
+            print LASTLINE; print $0; LAST=null; LASTLINE=null
+        } else {
+            LAST = $1;LASTLINE = $0
+        }
+    } 
+    END { if (LASTLINE != null) { print LASTLINE } }'
 }
 
 function get_all_runs() {
@@ -91,7 +100,12 @@ function get_all_runs() {
 # return url and name for failed or cancelled jobs that are the most recent ones for each workflow
 function find_failed_or_cancelled() {
     get_all_runs | filter_oldruns \
-      | awk -F, '{ gsub(/"/, ""); if ($3 == "failure" || $3 == "cancelled") { print $4 "\t" $5 "\t" $6 } }'
+      | awk '
+      BEGIN { FPAT="([^,]+)|(\"[^\"]+\")" } 
+      { 
+        gsub(/"/, "", $3); gsub(/"/, "", $4); gsub(/"/, "", $5); gsub(/"/, "", $6); 
+        if ($3 == "failure" || $3 == "cancelled") { print $4 "\t" $5 "\t" $6 }
+      }'
 }
 
 # allocate file descriptor for the failed or cancelled url and name listing
