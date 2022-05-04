@@ -2528,7 +2528,7 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
         if (labelsin.includes('doc-added')){
           return
         }
-        const Labels=['doc','doc-required','no-need-doc','doc-info-missing']
+        const Labels=['doc','doc-required','doc-added','no-need-doc','doc-info-missing']
         const labels = labels_1.extractLabels(description, labelPattern);
         const succmessage ="@"+user1+":Thanks for providing doc info!";
         octokit.issues.addAssignees({
