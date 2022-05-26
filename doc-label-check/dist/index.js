@@ -2525,10 +2525,10 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
         logger.debug(`--- ${htmlUrl} ---`);
         // Labels extracted from an issue description
 	      logger.debug(labelsin)
-        if (labelsin.includes('doc-added')){
+        if (labelsin.includes('doc-complete')){
           return
         }
-        const Labels=['doc','doc-required','no-need-doc','doc-info-missing']
+        const Labels=['doc','doc-required','doc-not-needed','doc-label-missing']
         const labels = labels_1.extractLabels(description, labelPattern);
         const succmessage ="@"+user1+":Thanks for providing doc info!";
         octokit.issues.addAssignees({
@@ -2604,7 +2604,7 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
         for(let index=0;index<Labels.length;index++){
           if(issuelabels.includes(Labels[index])){
               console.log(Labels[index],"issue exists");
-                if(Labels[index]=='doc-info-missing'){
+                if(Labels[index]=='doc-label-missing'){
                     isdocmis=1
                 }
           }else{
@@ -2616,7 +2616,7 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
         }
         const errmessage="@"+user1+":Thanks for your contribution. For this PR, do we need to update docs?\n(The [PR template contains info about doc](https://github.com/apache/pulsar/blob/master/.github/PULL_REQUEST_TEMPLATE.md#documentation), which helps others know more about the changes. Can you provide doc-related info in this and future PR descriptions? Thanks)"
         if(num==4 && isdocmis==0){
-          labelsToAdd.push("doc-info-missing")
+          labelsToAdd.push("doc-label-missing")
           yield octokit.issues.createComment({
             owner,
             repo,
@@ -2631,7 +2631,7 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
             owner,
             repo,
             issue_number,
-            name:"doc-info-missing"
+            name:"doc-label-missing"
           })
           yield octokit.issues.createComment({
             owner,
@@ -2657,7 +2657,7 @@ function processIssue(octokit, repo, owner, issue_number, htmlUrl, description, 
                 owner,
                 repo,
                 issue_number,
-                name:"doc-info-missing"
+                name:"doc-label-missing"
               })
 
             yield octokit.issues.createComment({
