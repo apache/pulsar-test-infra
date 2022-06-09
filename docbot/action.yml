@@ -1,0 +1,12 @@
+name: 'Documentation Bot'
+description: 'Automatically label pull requests based on the checked task list'
+author: 'Max Xu'
+branding:
+  icon: 'check'
+  color: 'green'
+
+runs:
+  using: composite
+  steps:
+    - run: go run main.go
+      shell: bash
