@@ -1,6 +1,6 @@
 name: 'Documentation Bot'
 description: 'Automatically label pull requests based on the checked task list'
-author: 'Max Xu'
+author: 'Max Xu <maxs.xu@gmail.com>'
 branding:
   icon: 'check'
   color: 'green'
