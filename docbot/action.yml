@@ -10,3 +10,4 @@ runs:
   steps:
     - run: go run main.go
       shell: bash
+      working-directory: docbot
