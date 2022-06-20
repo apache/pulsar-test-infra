@@ -4,7 +4,7 @@ Automatically label pull requests based on the checked task list.
 
 ## Usage
 
-Create a workflow `.github/workflows/ci-docbot.yml` with below content:
+Create a workflow `.github/workflows/ci-documentbot.yml` with below content:
 
 ```yaml
 name: Documentation Bot
@@ -17,8 +17,13 @@ on:
       - labeled
       - unlabeled
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   label:
+    if: ${{ github.repository == 'apache/pulsar' }}
     permissions:
       pull-requests: write
     runs-on: ubuntu-latest
@@ -26,7 +31,7 @@ jobs:
       - name: Checkout action
         uses: actions/checkout@v3
         with:
-          repository: maxsxu/action-labeler
+          repository: apache/pulsar-test-infra
           ref: master
 
       - name: Set up Go
@@ -35,10 +40,10 @@ jobs:
           go-version: 1.18
 
       - name: Labeling
-        uses: maxsxu/action-labeler@master
+        uses: ./docbot
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          LABEL_WATCH_LIST: 'doc,doc-required,doc-not-needed,doc-complete,doc-label-missing'
+          LABEL_WATCH_LIST: 'doc,doc-required,doc-not-needed,doc-complete'
           LABEL_MISSING: 'doc-label-missing'
 ```
 
