@@ -6,6 +6,7 @@ fi
 set -e
 
 COMMENT_BODY=$(jq -r '.comment.body' "${GITHUB_EVENT_PATH}")
+COMMENT_BODY=$(echo "$COMMENT_BODY" | xargs)
 
 BOT_COMMAND_PREFIX="/pulsarbot"
 BOT_TARGET_REPOSITORY=${GITHUB_REPOSITORY:-"apache/pulsar"}
