@@ -1,0 +1,24 @@
+{
+  "name": "delete-workflow-runs",
+  "version": "2.0.3",
+  "description": "The GitHub action to delete workflow runs in a repository.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mattraks/delete-workflow-runs.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Mattraks/delete-workflow-runs/issues"
+  },
+  "homepage": "https://github.com/Mattraks/delete-workflow-runs#readme",
+  "dependencies": {
+    "@actions/core": "^1.8.2",
+    "@octokit/rest": "^18.12.0"
+  }
+}
