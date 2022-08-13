@@ -309,6 +309,11 @@ func (a *Action) onPullRequestOpenedOrEdited() error {
 		}
 	}
 
+	if _, exist := currentLabelsSet[a.config.GetLabelMissing()]; exist && checkedCount == 0 {
+		logger.Infoln("Already added missing label.")
+		return fmt.Errorf("%s", MessageLabelMissing)
+	}
+
 	// Add missing label
 	if a.config.GetEnableLabelMissing() && checkedCount == 0 {
 		logger.Infoln("@Add missing label")
@@ -416,6 +421,11 @@ func (a *Action) onPullRequestLabeledOrUnlabeled() error {
 		if err != nil {
 			return fmt.Errorf("remove label %v: %v", label, err)
 		}
+	}
+
+	if _, exist := currentLabelsSet[a.config.GetLabelMissing()]; exist && checkedCount == 0 {
+		logger.Infoln("Already added missing label.")
+		return fmt.Errorf("%s", MessageLabelMissing)
 	}
 
 	// Add missing label
