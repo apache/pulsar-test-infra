@@ -311,6 +311,11 @@ func (a *Action) onPullRequestOpenedOrEdited() error {
 
 	// Add missing label
 	if a.config.GetEnableLabelMissing() && checkedCount == 0 {
+		if _, exist := currentLabelsSet[a.config.GetLabelMissing()]; exist {
+			logger.Infoln("Already added missing label.")
+			return fmt.Errorf("%s", MessageLabelMissing)
+		}
+
 		logger.Infoln("@Add missing label")
 		_, _, err = a.client.Issues.AddLabelsToIssue(a.globalContext,
 			a.config.GetOwner(), a.config.GetRepo(), a.config.GetNumber(),
@@ -420,6 +425,11 @@ func (a *Action) onPullRequestLabeledOrUnlabeled() error {
 
 	// Add missing label
 	if a.config.GetEnableLabelMissing() && checkedCount == 0 {
+		if _, exist := currentLabelsSet[a.config.GetLabelMissing()]; exist {
+			logger.Infoln("Already added missing label.")
+			return fmt.Errorf("%s", MessageLabelMissing)
+		}
+
 		logger.Infoln("@Add missing label")
 		_, _, err = a.client.Issues.AddLabelsToIssue(a.globalContext,
 			a.config.GetOwner(), a.config.GetRepo(), a.config.GetNumber(),
