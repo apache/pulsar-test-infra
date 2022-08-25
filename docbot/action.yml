@@ -11,7 +11,7 @@ runs:
     - name: Checkout
       uses: actions/checkout@v3
       with:
-        repository: pulsar/pulsar-test-infra
+        repository: apache/pulsar-test-infra
         ref: master
     - name: Setup Go
       uses: actions/setup-go@v3
