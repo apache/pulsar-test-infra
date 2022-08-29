@@ -19,7 +19,7 @@
   },
   "homepage": "https://github.com/cirruslabs/http-cache-service#readme",
   "dependencies": {
-    "@actions/core": "^1.2.5",
+    "@actions/core": "^1.9.1",
     "@actions/exec": "^1.0.4",
     "@actions/glob": "^0.1.0",
     "@actions/http-client": "^1.0.8",
