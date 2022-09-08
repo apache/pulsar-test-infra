@@ -135,15 +135,10 @@ func (a *Action) checkLabels() error {
 		}
 
 		for label, checked := range expectedLabelsMap {
-			_, found := prLabels[label]
-			if found {
-				if !checked {
-					labelsToRemove[label] = struct{}{}
-				}
-			} else {
-				if checked {
-					labelsToAdd[label] = struct{}{}
-				}
+			if _, found := prLabels[label]; found && !checked {
+				labelsToRemove[label] = struct{}{}
+			} else if !found && checked {
+				labelsToAdd[label] = struct{}{}
 			}
 		}
 	}
