@@ -85,7 +85,7 @@ Need to update docs?
 	config := mustNewActionConfig()
 	action := NewActionWithClient(context.Background(), config, github.NewClient(mockedHTTPClient))
 
-	err := action.Run(1, "opened")
+	err := action.Run(1, openedActionType)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +137,7 @@ Need to update docs?
 	config := mustNewActionConfig()
 	action := NewActionWithClient(context.Background(), config, github.NewClient(mockedHTTPClient))
 
-	err := action.Run(1, "opened")
+	err := action.Run(1, openedActionType)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -183,7 +183,7 @@ Need to update docs?
 	config := mustNewActionConfig()
 	action := NewActionWithClient(context.Background(), config, github.NewClient(mockedHTTPClient))
 
-	err := action.Run(1, "opened")
+	err := action.Run(1, openedActionType)
 	assertMessageLabel(t, err, MessageLabelMissing)
 }
 
@@ -227,7 +227,7 @@ Need to update docs?
 	config := mustNewActionConfig()
 	action := NewActionWithClient(context.Background(), config, github.NewClient(mockedHTTPClient))
 
-	err := action.Run(1, "opened")
+	err := action.Run(1, openedActionType)
 	assertMessageLabel(t, err, MessageLabelMultiple)
 }
 
@@ -271,7 +271,7 @@ Need to update docs?
 	config := mustNewActionConfig()
 	action := NewActionWithClient(context.Background(), config, github.NewClient(mockedHTTPClient))
 
-	err := action.Run(1, "opened")
+	err := action.Run(1, openedActionType)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -315,6 +315,51 @@ Need to update docs?
 	config := mustNewActionConfig()
 	action := NewActionWithClient(context.Background(), config, github.NewClient(mockedHTTPClient))
 
-	err := action.Run(1, "opened")
+	err := action.Run(1, openedActionType)
 	assertMessageLabel(t, err, MessageLabelMissing)
+}
+
+func TestSingleChecked_WhenDocLabelExists(t *testing.T) {
+	id := int64(1)
+	body := fmt.Sprintf(`
+Check the box below or label this PR directly.
+
+Need to update docs?
+
+- [ ] %s
+(Your PR needs to update docs and you will update later)
+
+- [x] %s
+(Please explain why)
+
+- [ ] %s
+(Your PR contains doc changes)
+
+- [ ] %s
+(Docs have been already added)
+`, "`doc-required`", "`doc-not-needed`", "`doc`", "`doc-complete`")
+
+	docLabel := "doc"
+	mockedHTTPClient := mock.NewMockedHTTPClient(
+		mock.WithRequestMatch(
+			mock.GetReposPullsByOwnerByRepoByPullNumber,
+			github.PullRequest{
+				ID:     &id,
+				Body:   &body,
+				Labels: []*github.Label{{Name: &docLabel}},
+			},
+		), mock.WithRequestMatch(
+			mock.GetReposLabelsByOwnerByRepo,
+			repoLabels(),
+		),
+		mock.WithRequestMatch(mock.PostReposIssuesLabelsByOwnerByRepoByIssueNumber, nil),
+		mock.WithRequestMatch(mock.DeleteReposIssuesLabelsByOwnerByRepoByIssueNumberByName, nil),
+	)
+	config := mustNewActionConfig()
+	action := NewActionWithClient(context.Background(), config, github.NewClient(mockedHTTPClient))
+
+	err := action.Run(1, openedActionType)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
