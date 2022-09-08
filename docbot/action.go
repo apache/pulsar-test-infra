@@ -17,6 +17,11 @@ const (
 Instructions see [Pulsar Documentation Label Guide](https://docs.google.com/document/d/1Qw7LHQdXWBW9t2-r-A7QdFDBwmZh6ytB4guwMoXHqc0).`
 	MessageLabelMultiple = `Please select only one documentation label for your PR.
 Instructions see [Pulsar Documentation Label Guide](https://docs.google.com/document/d/1Qw7LHQdXWBW9t2-r-A7QdFDBwmZh6ytB4guwMoXHqc0).`
+
+	openedActionType    = "opened"
+	editedActionType    = "edited"
+	labeledActionType   = "labeled"
+	unlabeledActionType = "unlabeled"
 )
 
 type Action struct {
@@ -51,7 +56,7 @@ func (a *Action) Run(prNumber int, actionType string) error {
 	a.prNumber = prNumber
 
 	switch actionType {
-	case "opened", "edited", "labeled", "unlabeled":
+	case openedActionType, editedActionType, labeledActionType, unlabeledActionType:
 		return a.checkLabels()
 	}
 	return nil
@@ -67,6 +72,8 @@ func (a *Action) checkLabels() error {
 	if pr.Body != nil {
 		bodyLabels = a.extractLabels(*pr.Body)
 	}
+
+	logger.Infof("PR description: %v\n", *pr.Body)
 
 	logger.Infoln("@List repo labels")
 	repoLabels, err := a.getRepoLabels()
@@ -130,10 +137,13 @@ func (a *Action) checkLabels() error {
 		for label, checked := range expectedLabelsMap {
 			_, found := prLabels[label]
 			if found {
-				continue
-			}
-			if checked {
-				labelsToAdd[label] = struct{}{}
+				if !checked {
+					labelsToRemove[label] = struct{}{}
+				}
+			} else {
+				if checked {
+					labelsToAdd[label] = struct{}{}
+				}
 			}
 		}
 	}
