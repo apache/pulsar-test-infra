@@ -23,7 +23,6 @@ on:
     paths:
       - '.github/workflows/**'
       - 'docbot/**'
-  push:
 
 jobs:
   unit-test:
