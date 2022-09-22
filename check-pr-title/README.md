@@ -38,7 +38,7 @@ jobs:
       - name: Check PR title
         uses: ./check-pr-title
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      		GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Configuration
