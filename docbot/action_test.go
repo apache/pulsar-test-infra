@@ -184,7 +184,7 @@ Need to update docs?
 	action := NewActionWithClient(context.Background(), config, github.NewClient(mockedHTTPClient))
 
 	err := action.Run(1, openedActionType)
-	assertMessageLabel(t, err, MessageLabelMissing)
+	assertMessageLabel(t, err, action.getLabelMissingMessage())
 }
 
 func TestMultipleChecked_WhenMultipleLabelsNotEnabled(t *testing.T) {
@@ -316,7 +316,7 @@ Need to update docs?
 	action := NewActionWithClient(context.Background(), config, github.NewClient(mockedHTTPClient))
 
 	err := action.Run(1, openedActionType)
-	assertMessageLabel(t, err, MessageLabelMissing)
+	assertMessageLabel(t, err, action.getLabelMissingMessage())
 }
 
 func TestSingleChecked_WhenDocLabelExists(t *testing.T) {
