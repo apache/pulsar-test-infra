@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/apache/pulsar-test-infra/docbot/cmd/ctl"
 	"os"
+
+	"github.com/apache/pulsar-test-infra/docbot/cmd/ctl"
 )
 
 func main() {

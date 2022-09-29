@@ -2,9 +2,10 @@ package check
 
 import (
 	"context"
-	"github.com/sethvargo/go-githubactions"
 	"os"
 	"testing"
+
+	"github.com/sethvargo/go-githubactions"
 
 	"github.com/google/go-github/v45/github"
 	"github.com/migueleliasweb/go-github-mock/src/mock"

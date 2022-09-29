@@ -17,6 +17,6 @@ runs:
       with:
         go-version: 1.18
     - name: Execute
-      run: go run .
+      run: go run . label
       shell: bash
       working-directory: docbot

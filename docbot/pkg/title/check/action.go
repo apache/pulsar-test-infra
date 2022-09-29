@@ -5,10 +5,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
+
 	"github.com/apache/pulsar-test-infra/docbot/pkg/logger"
 	"github.com/google/go-github/v45/github"
 	"golang.org/x/oauth2"
-	"regexp"
 )
 
 const (

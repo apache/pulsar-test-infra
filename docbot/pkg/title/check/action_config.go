@@ -2,9 +2,10 @@ package check
 
 import (
 	"fmt"
-	"github.com/sethvargo/go-githubactions"
 	"os"
 	"strings"
+
+	"github.com/sethvargo/go-githubactions"
 )
 
 type Config struct {

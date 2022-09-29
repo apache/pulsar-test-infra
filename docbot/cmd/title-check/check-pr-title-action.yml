@@ -9,13 +9,16 @@ runs:
   steps:
     - name: Checkout
       uses: actions/checkout@v3
+      with:
+        repository: apache/pulsar-test-infra
     - name: Setup Go
       uses: actions/setup-go@v3
       with:
         go-version: 1.18
     - name: Execute
-      run: go run .
+      run: go run . title check
       shell: bash
+      working-directory: docbot
 inputs:
   types:
     description: "Provide custom types."
