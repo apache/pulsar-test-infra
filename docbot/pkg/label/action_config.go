@@ -13,6 +13,7 @@ type ActionConfig struct {
 
 	labelPattern        *string
 	labelWatchSet       map[string]struct{}
+	labelWatchList      []string
 	labelMissing        *string
 	enableLabelMissing  *bool
 	enableLabelMultiple *bool
@@ -34,14 +35,18 @@ func NewActionConfig() (*ActionConfig, error) {
 	}
 
 	labelWatchListSlug := os.Getenv("LABEL_WATCH_LIST")
-	labelWatchList := strings.Split(labelWatchListSlug, ",")
 	labelWatchSet := make(map[string]struct{})
-	for _, l := range labelWatchList {
+	labelWatchList := make([]string, 0)
+	for _, l := range strings.Split(labelWatchListSlug, ",") {
 		key := strings.TrimSpace(l)
 		if key == "" {
 			continue
 		}
-		labelWatchSet[key] = struct{}{}
+		_, found := labelWatchSet[key]
+		if !found {
+			labelWatchSet[key] = struct{}{}
+			labelWatchList = append(labelWatchList, key)
+		}
 	}
 
 	enableLabelMissingSlug := os.Getenv("ENABLE_LABEL_MISSING")
@@ -67,6 +72,7 @@ func NewActionConfig() (*ActionConfig, error) {
 		owner:               &owner,
 		labelPattern:        &labelPattern,
 		labelWatchSet:       labelWatchSet,
+		labelWatchList:      labelWatchList,
 		labelMissing:        &labelMissing,
 		enableLabelMissing:  &enableLabelMissing,
 		enableLabelMultiple: &enableLabelMultiple,

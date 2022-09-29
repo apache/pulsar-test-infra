@@ -13,16 +13,22 @@ import (
 )
 
 const (
-	MessageLabelMissing = `Please provide a correct documentation label for your PR.
-Instructions see [Pulsar Documentation Label Guide](https://docs.google.com/document/d/1Qw7LHQdXWBW9t2-r-A7QdFDBwmZh6ytB4guwMoXHqc0).`
-	MessageLabelMultiple = `Please select only one documentation label for your PR.
-Instructions see [Pulsar Documentation Label Guide](https://docs.google.com/document/d/1Qw7LHQdXWBW9t2-r-A7QdFDBwmZh6ytB4guwMoXHqc0).`
+	MessageLabelMultiple = "Please select only one documentation label in your PR description."
 
 	openedActionType    = "opened"
 	editedActionType    = "edited"
 	labeledActionType   = "labeled"
 	unlabeledActionType = "unlabeled"
 )
+
+var builtInDescriptions = make(map[string]string)
+
+func init() {
+	builtInDescriptions["doc-required"] = "Your PR changes impact docs and you will update later"
+	builtInDescriptions["doc-not-needed"] = "Your PR changes do not impact docs"
+	builtInDescriptions["doc"] = "Your PR contains doc changes"
+	builtInDescriptions["doc-complete"] = "Docs have been already added"
+}
 
 type Action struct {
 	config *ActionConfig
@@ -117,7 +123,7 @@ func (a *Action) checkLabels() error {
 			labelsToAdd[a.config.GetLabelMissing()] = struct{}{}
 		} else {
 			logger.Infoln("Already added missing label.")
-			return errors.New(MessageLabelMissing)
+			return errors.New(a.getLabelMissingMessage())
 		}
 	} else {
 		if !a.config.GetEnableLabelMultiple() && checkedCount > 1 {
@@ -170,11 +176,11 @@ func (a *Action) checkLabels() error {
 	}
 
 	if checkedCount == 0 {
-		err := a.addAndCleanupHelpComment(pr.User.GetLogin(), MessageLabelMissing)
+		err := a.addAndCleanupHelpComment(pr.User.GetLogin(), a.getLabelMissingMessage())
 		if err != nil {
 			return err
 		}
-		return errors.New(MessageLabelMissing)
+		return errors.New(a.getLabelMissingMessage())
 	}
 
 	return nil
@@ -318,4 +324,20 @@ func (a *Action) addAndCleanupHelpComment(login, body string) error {
 	}
 
 	return nil
+}
+
+func (a *Action) getLabelMissingMessage() string {
+	msg := "Please add the following content to your PR description and select a checkbox:\n```\n"
+
+	for _, label := range a.config.labelWatchList {
+		desc := ""
+		if value, found := builtInDescriptions[label]; found {
+			desc = fmt.Sprintf("<!-- %s -->", value)
+		}
+		msg += fmt.Sprintf("- [ ] `%s` %s\n", label, desc)
+	}
+
+	msg += "```"
+
+	return msg
 }
