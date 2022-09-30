@@ -81,25 +81,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  label:
-    if: ${{ github.repository == 'apache/pulsar' }}
+  title-check:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout action
-        uses: actions/checkout@v3
-        with:
-          repository: apache/pulsar-test-infra
-          ref: master
-
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.18
-
-      - name: Labeling
-        uses: ./docbot title check
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Validating PR Title
+        uses: apache/pulsar-test-infra/docbot/cmd/title-check@master
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Configuration
