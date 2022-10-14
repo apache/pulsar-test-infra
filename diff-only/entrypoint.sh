@@ -34,16 +34,17 @@ if [[ $COMMITS -gt 0 ]]; then
 
         if [[ ${found_changed_dir_not_in_target_dirs} == "yes" ]]; then
             echo "Changes ${CHANGED_DIRS} not only in $*, setting 'changed_only' to 'no'"
-            echo ::set-output name=changed_only::no
+            echo "changed_only=no" >> $GITHUB_OUTPUT
         else
             echo "Changes ${CHANGED_DIRS} only in $*, setting 'changed_only' to 'yes'"
-            echo ::set-output name=changed_only::yes
+            echo "changed_only=yes" >> $GITHUB_OUTPUT
         fi
     else
         echo "Cannot find first commit. Setting 'changed_only' to 'no'."
-        echo ::set-output name=changed_only::no
+        echo "changed_only=no" >> $GITHUB_OUTPUT
     fi
 else
     echo "Cannot find number of commits in pull_request. Setting 'changed_only' to 'no'."
-    echo ::set-output name=changed_only::no
+    echo "changed_only=no" >> $GITHUB_OUTPUT
+
 fi
