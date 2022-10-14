@@ -9,6 +9,11 @@ inputs:
   working-directory:
     description: 'Relative path under $GITHUB_WORKSPACE where the repository was checked out.'
     required: false
+  ref:
+    description: |
+      Git reference (e.g. branch name) from which the changes will be detected.
+      This option is ignored if action is triggered by pull_request event.
+    required: false
   base:
     description: |
       Git reference (e.g. branch name) against which the changes will be detected. Defaults to repository default branch (e.g. master).
@@ -29,7 +34,7 @@ inputs:
                   If needed it uses single or double quotes to wrap filename with unsafe characters.
         'escape'- Space delimited list usable as command line argument list in linux shell.
                   Backslash escapes every potentially unsafe character.
-    required: true
+    required: false
     default: none
   initial-fetch-depth:
     description: |
