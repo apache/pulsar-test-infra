@@ -105,7 +105,7 @@ function annotateTestResult(testResult, token, headSha, annotateOnly, updateChec
     });
 }
 exports.annotateTestResult = annotateTestResult;
-function attachSummary(testResults, detailedSummary) {
+function attachSummary(testResults, detailedSummary, includePassed) {
     return __awaiter(this, void 0, void 0, function* () {
         const table = [
             [
@@ -132,12 +132,19 @@ function attachSummary(testResults, detailedSummary) {
                 `${testResult.failed} failed`
             ]);
             if (detailedSummary) {
-                for (const annotation of testResult.annotations) {
-                    detailsTable.push([
-                        `${testResult.checkName}`,
-                        `${annotation.title}`,
-                        `${annotation.annotation_level === 'notice' ? '✅ pass' : `❌ ${annotation.annotation_level}`}`
-                    ]);
+                const annotations = testResult.annotations.filter(annotation => includePassed || annotation.annotation_level !== 'notice');
+                if (annotations.length === 0) {
+                    core.warning(`⚠️ No annotations found for ${testResult.checkName}. If you want to include passed results in this table please configure 'include_passed' as 'true'`);
+                    detailsTable.push([`-`, `No test annotations available`, `-`]);
+                }
+                else {
+                    for (const annotation of annotations) {
+                        detailsTable.push([
+                            `${testResult.checkName}`,
+                            `${annotation.title}`,
+                            `${annotation.annotation_level === 'notice' ? '✅ pass' : `❌ ${annotation.annotation_level}`}`
+                        ]);
+                    }
                 }
             }
         }
@@ -238,7 +245,7 @@ function run() {
             };
             core.info(`Retrieved ${reportsCount} reports to process.`);
             for (let i = 0; i < reportsCount; i++) {
-                const testResult = yield (0, testParser_1.parseTestReports)((0, utils_1.retrieve)('checkName', checkName, i, reportsCount), (0, utils_1.retrieve)('summary', summary, i, reportsCount), (0, utils_1.retrieve)('reportPaths', reportPaths, i, reportsCount), (0, utils_1.retrieve)('suiteRegex', suiteRegex, i, reportsCount), includePassed, checkRetries, excludeSources, (0, utils_1.retrieve)('checkTitleTemplate', checkTitleTemplate, i, reportsCount), (0, utils_1.retrieve)('testFilesPrefix', testFilesPrefix, i, reportsCount), transformers);
+                const testResult = yield (0, testParser_1.parseTestReports)((0, utils_1.retrieve)('checkName', checkName, i, reportsCount), (0, utils_1.retrieve)('summary', summary, i, reportsCount), (0, utils_1.retrieve)('reportPaths', reportPaths, i, reportsCount), (0, utils_1.retrieve)('suiteRegex', suiteRegex, i, reportsCount), includePassed && annotateNotice, checkRetries, excludeSources, (0, utils_1.retrieve)('checkTitleTemplate', checkTitleTemplate, i, reportsCount), (0, utils_1.retrieve)('testFilesPrefix', testFilesPrefix, i, reportsCount), transformers);
                 mergedResult.totalCount += testResult.totalCount;
                 mergedResult.skipped += testResult.skipped;
                 mergedResult.failed += testResult.failed;
@@ -275,7 +282,7 @@ function run() {
             const supportsJobSummary = process.env['GITHUB_STEP_SUMMARY'];
             if (jobSummary && supportsJobSummary) {
                 try {
-                    yield (0, annotator_1.attachSummary)(testResults, detailedSummary);
+                    yield (0, annotator_1.attachSummary)(testResults, detailedSummary, includePassed);
                 }
                 catch (error) {
                     core.error(`❌ Failed to set the summary using the provided token. (${error})`);
@@ -453,12 +460,12 @@ exports.resolvePath = resolvePath;
  * Modification Copyright 2022 Mike Penz
  * https://github.com/mikepenz/action-junit-report/
  */
-function parseFile(file, suiteRegex = '', includePassed = false, checkRetries = false, excludeSources = ['/build/', '/__pycache__/'], checkTitleTemplate = undefined, testFilesPrefix = '', transformer = []) {
+function parseFile(file, suiteRegex = '', annotatePassed = false, checkRetries = false, excludeSources = ['/build/', '/__pycache__/'], checkTitleTemplate = undefined, testFilesPrefix = '', transformer = []) {
     return __awaiter(this, void 0, void 0, function* () {
         core.debug(`Parsing file ${file}`);
         const data = fs.readFileSync(file, 'utf8');
         const report = JSON.parse(parser.xml2json(data, { compact: true }));
-        return parseSuite(report, '', suiteRegex, includePassed, checkRetries, excludeSources, checkTitleTemplate, testFilesPrefix, transformer);
+        return parseSuite(report, '', suiteRegex, annotatePassed, checkRetries, excludeSources, checkTitleTemplate, testFilesPrefix, transformer);
     });
 }
 exports.parseFile = parseFile;
@@ -467,7 +474,7 @@ function templateVar(varName) {
 }
 function parseSuite(
 /* eslint-disable  @typescript-eslint/no-explicit-any */
-suite, parentName, suiteRegex, includePassed = false, checkRetries = false, excludeSources, checkTitleTemplate = undefined, testFilesPrefix = '', transformer) {
+suite, parentName, suiteRegex, annotatePassed = false, checkRetries = false, excludeSources, checkTitleTemplate = undefined, testFilesPrefix = '', transformer) {
     return __awaiter(this, void 0, void 0, function* () {
         let totalCount = 0;
         let skipped = 0;
@@ -498,7 +505,7 @@ suite, parentName, suiteRegex, includePassed = false, checkRetries = false, excl
                     suiteName = testsuite._attributes.name;
                 }
             }
-            const res = yield parseSuite(testsuite, suiteName, suiteRegex, includePassed, checkRetries, excludeSources, checkTitleTemplate, testFilesPrefix, transformer);
+            const res = yield parseSuite(testsuite, suiteName, suiteRegex, annotatePassed, checkRetries, excludeSources, checkTitleTemplate, testFilesPrefix, transformer);
             totalCount += res.totalCount;
             skipped += res.skipped;
             annotations.push(...res.annotations);
@@ -542,61 +549,61 @@ suite, parentName, suiteRegex, includePassed = false, checkRetries = false, excl
                 if (testcase.skipped || testcase._attributes.status === 'disabled') {
                     skipped++;
                 }
-                if (failed || (includePassed && success)) {
-                    const stackTrace = ((testcase.failure && testcase.failure._cdata) ||
-                        (testcase.failure && testcase.failure._text) ||
-                        (testcase.error && testcase.error._cdata) ||
-                        (testcase.error && testcase.error._text) ||
-                        '')
-                        .toString()
-                        .trim();
-                    const message = ((testcase.failure && testcase.failure._attributes && testcase.failure._attributes.message) ||
-                        (testcase.error && testcase.error._attributes && testcase.error._attributes.message) ||
-                        stackTrace.split('\n').slice(0, 2).join('\n') ||
-                        testcase._attributes.name).trim();
-                    const pos = yield resolveFileAndLine(testcase._attributes.file || testsuite._attributes.file, testcase._attributes.line || testsuite._attributes.line, testcase._attributes.classname ? testcase._attributes.classname : testcase._attributes.name, stackTrace);
-                    let transformedFileName = pos.fileName;
-                    for (const r of transformer) {
-                        transformedFileName = (0, utils_1.applyTransformer)(r, transformedFileName);
-                    }
-                    let resolvedPath = yield resolvePath(transformedFileName, excludeSources);
-                    core.debug(`Path prior to stripping: ${resolvedPath}`);
-                    const githubWorkspacePath = process.env['GITHUB_WORKSPACE'];
-                    if (githubWorkspacePath) {
-                        resolvedPath = resolvedPath.replace(`${githubWorkspacePath}/`, ''); // strip workspace prefix, make the path relative
-                    }
-                    let title = '';
-                    if (checkTitleTemplate) {
-                        // ensure to not duplicate the test_name if file_name is equal
-                        const fileName = pos.fileName !== testcase._attributes.name ? pos.fileName : '';
-                        title = checkTitleTemplate
-                            .replace(templateVar('FILE_NAME'), fileName)
-                            .replace(templateVar('SUITE_NAME'), suiteName !== null && suiteName !== void 0 ? suiteName : '')
-                            .replace(templateVar('TEST_NAME'), testcase._attributes.name);
-                    }
-                    else if (pos.fileName !== testcase._attributes.name) {
-                        title = suiteName
-                            ? `${pos.fileName}.${suiteName}/${testcase._attributes.name}`
-                            : `${pos.fileName}.${testcase._attributes.name}`;
-                    }
-                    else {
-                        title = suiteName ? `${suiteName}/${testcase._attributes.name}` : `${testcase._attributes.name}`;
-                    }
-                    // optionally attach the prefix to the path
-                    resolvedPath = testFilesPrefix ? pathHelper.join(testFilesPrefix, resolvedPath) : resolvedPath;
-                    core.info(`${resolvedPath}:${pos.line} | ${message.replace(/\n/g, ' ')}`);
-                    annotations.push({
-                        path: resolvedPath,
-                        start_line: pos.line,
-                        end_line: pos.line,
-                        start_column: 0,
-                        end_column: 0,
-                        annotation_level: success ? 'notice' : 'failure',
-                        title: escapeEmoji(title),
-                        message: escapeEmoji(message),
-                        raw_details: escapeEmoji(stackTrace)
-                    });
+                const stackTrace = ((testcase.failure && testcase.failure._cdata) ||
+                    (testcase.failure && testcase.failure._text) ||
+                    (testcase.error && testcase.error._cdata) ||
+                    (testcase.error && testcase.error._text) ||
+                    '')
+                    .toString()
+                    .trim();
+                const message = ((testcase.failure && testcase.failure._attributes && testcase.failure._attributes.message) ||
+                    (testcase.error && testcase.error._attributes && testcase.error._attributes.message) ||
+                    stackTrace.split('\n').slice(0, 2).join('\n') ||
+                    testcase._attributes.name).trim();
+                const pos = yield resolveFileAndLine(testcase._attributes.file || (testsuite._attributes !== undefined ? testsuite._attributes.file : null), testcase._attributes.line || (testsuite._attributes !== undefined ? testsuite._attributes.line : null), testcase._attributes.classname ? testcase._attributes.classname : testcase._attributes.name, stackTrace);
+                let transformedFileName = pos.fileName;
+                for (const r of transformer) {
+                    transformedFileName = (0, utils_1.applyTransformer)(r, transformedFileName);
                 }
+                let resolvedPath = failed || (annotatePassed && success)
+                    ? yield resolvePath(transformedFileName, excludeSources)
+                    : transformedFileName;
+                core.debug(`Path prior to stripping: ${resolvedPath}`);
+                const githubWorkspacePath = process.env['GITHUB_WORKSPACE'];
+                if (githubWorkspacePath) {
+                    resolvedPath = resolvedPath.replace(`${githubWorkspacePath}/`, ''); // strip workspace prefix, make the path relative
+                }
+                let title = '';
+                if (checkTitleTemplate) {
+                    // ensure to not duplicate the test_name if file_name is equal
+                    const fileName = pos.fileName !== testcase._attributes.name ? pos.fileName : '';
+                    title = checkTitleTemplate
+                        .replace(templateVar('FILE_NAME'), fileName)
+                        .replace(templateVar('SUITE_NAME'), suiteName !== null && suiteName !== void 0 ? suiteName : '')
+                        .replace(templateVar('TEST_NAME'), testcase._attributes.name);
+                }
+                else if (pos.fileName !== testcase._attributes.name) {
+                    title = suiteName
+                        ? `${pos.fileName}.${suiteName}/${testcase._attributes.name}`
+                        : `${pos.fileName}.${testcase._attributes.name}`;
+                }
+                else {
+                    title = suiteName ? `${suiteName}/${testcase._attributes.name}` : `${testcase._attributes.name}`;
+                }
+                // optionally attach the prefix to the path
+                resolvedPath = testFilesPrefix ? pathHelper.join(testFilesPrefix, resolvedPath) : resolvedPath;
+                core.info(`${resolvedPath}:${pos.line} | ${message.replace(/\n/g, ' ')}`);
+                annotations.push({
+                    path: resolvedPath,
+                    start_line: pos.line,
+                    end_line: pos.line,
+                    start_column: 0,
+                    end_column: 0,
+                    annotation_level: success ? 'notice' : 'failure',
+                    title: escapeEmoji(title),
+                    message: escapeEmoji(message),
+                    raw_details: escapeEmoji(stackTrace)
+                });
             }
         }
         return { totalCount, skipped, annotations };
@@ -609,7 +616,7 @@ suite, parentName, suiteRegex, includePassed = false, checkRetries = false, excl
  * Modification Copyright 2022 Mike Penz
  * https://github.com/mikepenz/action-junit-report/
  */
-function parseTestReports(checkName, summary, reportPaths, suiteRegex, includePassed = false, checkRetries = false, excludeSources, checkTitleTemplate = undefined, testFilesPrefix = '', transformer) {
+function parseTestReports(checkName, summary, reportPaths, suiteRegex, annotatePassed = false, checkRetries = false, excludeSources, checkTitleTemplate = undefined, testFilesPrefix = '', transformer) {
     var e_2, _a;
     return __awaiter(this, void 0, void 0, function* () {
         core.debug(`Process test report for: ${reportPaths} (${checkName})`);
@@ -621,7 +628,7 @@ function parseTestReports(checkName, summary, reportPaths, suiteRegex, includePa
             for (var _b = __asyncValues(globber.globGenerator()), _c; _c = yield _b.next(), !_c.done;) {
                 const file = _c.value;
                 core.debug(`Parsing report file: ${file}`);
-                const { totalCount: c, skipped: s, annotations: a } = yield parseFile(file, suiteRegex, includePassed, checkRetries, excludeSources, checkTitleTemplate, testFilesPrefix, transformer);
+                const { totalCount: c, skipped: s, annotations: a } = yield parseFile(file, suiteRegex, annotatePassed, checkRetries, excludeSources, checkTitleTemplate, testFilesPrefix, transformer);
                 if (c === 0)
                     continue;
                 totalCount += c;
@@ -893,7 +900,6 @@ const file_command_1 = __nccwpck_require__(717);
 const utils_1 = __nccwpck_require__(5278);
 const os = __importStar(__nccwpck_require__(2037));
 const path = __importStar(__nccwpck_require__(1017));
-const uuid_1 = __nccwpck_require__(5840);
 const oidc_utils_1 = __nccwpck_require__(8041);
 /**
  * The code to exit an action
@@ -923,20 +929,9 @@ function exportVariable(name, val) {
     process.env[name] = convertedVal;
     const filePath = process.env['GITHUB_ENV'] || '';
     if (filePath) {
-        const delimiter = `ghadelimiter_${uuid_1.v4()}`;
-        // These should realistically never happen, but just in case someone finds a way to exploit uuid generation let's not allow keys or values that contain the delimiter.
-        if (name.includes(delimiter)) {
-            throw new Error(`Unexpected input: name should not contain the delimiter "${delimiter}"`);
-        }
-        if (convertedVal.includes(delimiter)) {
-            throw new Error(`Unexpected input: value should not contain the delimiter "${delimiter}"`);
-        }
-        const commandValue = `${name}<<${delimiter}${os.EOL}${convertedVal}${os.EOL}${delimiter}`;
-        file_command_1.issueCommand('ENV', commandValue);
+        return file_command_1.issueFileCommand('ENV', file_command_1.prepareKeyValueMessage(name, val));
     }
-    else {
-        command_1.issueCommand('set-env', { name }, convertedVal);
-    }
+    command_1.issueCommand('set-env', { name }, convertedVal);
 }
 exports.exportVariable = exportVariable;
 /**
@@ -954,7 +949,7 @@ exports.setSecret = setSecret;
 function addPath(inputPath) {
     const filePath = process.env['GITHUB_PATH'] || '';
     if (filePath) {
-        file_command_1.issueCommand('PATH', inputPath);
+        file_command_1.issueFileCommand('PATH', inputPath);
     }
     else {
         command_1.issueCommand('add-path', {}, inputPath);
@@ -994,7 +989,10 @@ function getMultilineInput(name, options) {
     const inputs = getInput(name, options)
         .split('\n')
         .filter(x => x !== '');
-    return inputs;
+    if (options && options.trimWhitespace === false) {
+        return inputs;
+    }
+    return inputs.map(input => input.trim());
 }
 exports.getMultilineInput = getMultilineInput;
 /**
@@ -1027,8 +1025,12 @@ exports.getBooleanInput = getBooleanInput;
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function setOutput(name, value) {
+    const filePath = process.env['GITHUB_OUTPUT'] || '';
+    if (filePath) {
+        return file_command_1.issueFileCommand('OUTPUT', file_command_1.prepareKeyValueMessage(name, value));
+    }
     process.stdout.write(os.EOL);
-    command_1.issueCommand('set-output', { name }, value);
+    command_1.issueCommand('set-output', { name }, utils_1.toCommandValue(value));
 }
 exports.setOutput = setOutput;
 /**
@@ -1157,7 +1159,11 @@ exports.group = group;
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function saveState(name, value) {
-    command_1.issueCommand('save-state', { name }, value);
+    const filePath = process.env['GITHUB_STATE'] || '';
+    if (filePath) {
+        return file_command_1.issueFileCommand('STATE', file_command_1.prepareKeyValueMessage(name, value));
+    }
+    command_1.issueCommand('save-state', { name }, utils_1.toCommandValue(value));
 }
 exports.saveState = saveState;
 /**
@@ -1223,13 +1229,14 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.issueCommand = void 0;
+exports.prepareKeyValueMessage = exports.issueFileCommand = void 0;
 // We use any as a valid input type
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const fs = __importStar(__nccwpck_require__(7147));
 const os = __importStar(__nccwpck_require__(2037));
+const uuid_1 = __nccwpck_require__(5840);
 const utils_1 = __nccwpck_require__(5278);
-function issueCommand(command, message) {
+function issueFileCommand(command, message) {
     const filePath = process.env[`GITHUB_${command}`];
     if (!filePath) {
         throw new Error(`Unable to find environment variable for file command ${command}`);
@@ -1241,7 +1248,22 @@ function issueCommand(command, message) {
         encoding: 'utf8'
     });
 }
-exports.issueCommand = issueCommand;
+exports.issueFileCommand = issueFileCommand;
+function prepareKeyValueMessage(key, value) {
+    const delimiter = `ghadelimiter_${uuid_1.v4()}`;
+    const convertedValue = utils_1.toCommandValue(value);
+    // These should realistically never happen, but just in case someone finds a
+    // way to exploit uuid generation let's not allow keys or values that contain
+    // the delimiter.
+    if (key.includes(delimiter)) {
+        throw new Error(`Unexpected input: name should not contain the delimiter "${delimiter}"`);
+    }
+    if (convertedValue.includes(delimiter)) {
+        throw new Error(`Unexpected input: value should not contain the delimiter "${delimiter}"`);
+    }
+    return `${key}<<${delimiter}${os.EOL}${convertedValue}${os.EOL}${delimiter}`;
+}
+exports.prepareKeyValueMessage = prepareKeyValueMessage;
 //# sourceMappingURL=file-command.js.map
 
 /***/ }),
@@ -1828,8 +1850,9 @@ exports.context = new Context.Context();
  * @param     token    the repo PAT or GITHUB_TOKEN
  * @param     options  other options to set
  */
-function getOctokit(token, options) {
-    return new utils_1.GitHub(utils_1.getOctokitOptions(token, options));
+function getOctokit(token, options, ...additionalPlugins) {
+    const GitHubWithPlugins = utils_1.GitHub.plugin(...additionalPlugins);
+    return new GitHubWithPlugins(utils_1.getOctokitOptions(token, options));
 }
 exports.getOctokit = getOctokit;
 //# sourceMappingURL=github.js.map
