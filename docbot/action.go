@@ -44,7 +44,6 @@ type Action struct {
 	client        *github.Client
 
 	prNumber int
-	actor    string
 }
 
 func NewAction(ac *ActionConfig) *Action {
@@ -157,8 +156,8 @@ func (a *Action) checkLabels() error {
 		}
 	}
 
-	logger.Infoln("Check first contribution.")
-	if _, ok := labelsToAdd[firstContributionLabel]; a.isFirstPR() && !ok {
+	logger.Infoln("Check first contribution: " + *pr.GetUser().Login)
+	if _, ok := labelsToAdd[firstContributionLabel]; a.isFirstPR(*pr.GetUser().Login) && !ok {
 		logger.Infoln("Is first contribution.")
 		labelsToAdd[firstContributionLabel] = struct{}{}
 	}
@@ -356,11 +355,11 @@ func (a *Action) getLabelMissingMessage() string {
 	return msg
 }
 
-func (a *Action) isFirstPR() bool {
+func (a *Action) isFirstPR(login string) bool {
 	jsonData := map[string]string{
 		"query": `
             {
-			  user(login: "` + a.actor + `") {
+			  user(login: "` + login + `") {
 				contributionsCollection {
 				  commitContributionsByRepository(maxRepositories: 100) {
 					contributions {
@@ -393,5 +392,5 @@ func (a *Action) isFirstPR() bool {
 	data, _ := io.ReadAll(response.Body)
 	// just search string
 	expected := `"repository":{"owner":{"login":"apache"},"name":"pulsar"}`
-	return strings.Contains(string(data), expected)
+	return !strings.Contains(string(data), expected)
 }

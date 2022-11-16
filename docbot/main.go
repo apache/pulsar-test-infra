@@ -19,7 +19,6 @@ func main() {
 	if err != nil {
 		logger.Fatalf("Get github context: %v\n", err)
 	}
-	action.actor = githubContext.Actor
 
 	switch githubContext.EventName {
 	case "pull_request", "pull_request_target":
