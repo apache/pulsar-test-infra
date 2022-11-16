@@ -157,6 +157,12 @@ func (a *Action) checkLabels() error {
 		}
 	}
 
+	logger.Infoln("Check first contribution.")
+	if _, ok := labelsToAdd[firstContributionLabel]; a.isFirstPR() && !ok {
+		logger.Infoln("Is first contribution.")
+		labelsToAdd[firstContributionLabel] = struct{}{}
+	}
+
 	if len(labelsToAdd) == 0 {
 		logger.Infoln("No labels to add.")
 	} else {
@@ -181,10 +187,6 @@ func (a *Action) checkLabels() error {
 				return err
 			}
 		}
-	}
-
-	if _, ok := labelsToAdd[firstContributionLabel]; a.isFirstPR() && !ok {
-		labelsToAdd[firstContributionLabel] = struct{}{}
 	}
 
 	if checkedCount == 0 {
