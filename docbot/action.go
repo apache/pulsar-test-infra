@@ -1,11 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/apache/pulsar-test-infra/docbot/pkg/logger"
 	"github.com/google/go-github/v45/github"
@@ -19,6 +24,8 @@ const (
 	editedActionType    = "edited"
 	labeledActionType   = "labeled"
 	unlabeledActionType = "unlabeled"
+
+	firstContributionLabel = "first-pr"
 )
 
 var builtInDescriptions = make(map[string]string)
@@ -37,6 +44,7 @@ type Action struct {
 	client        *github.Client
 
 	prNumber int
+	actor    string
 }
 
 func NewAction(ac *ActionConfig) *Action {
@@ -173,6 +181,10 @@ func (a *Action) checkLabels() error {
 				return err
 			}
 		}
+	}
+
+	if _, ok := labelsToAdd[firstContributionLabel]; a.isFirstPR() && !ok {
+		labelsToAdd[firstContributionLabel] = struct{}{}
 	}
 
 	if checkedCount == 0 {
@@ -340,4 +352,44 @@ func (a *Action) getLabelMissingMessage() string {
 	msg += "```"
 
 	return msg
+}
+
+func (a *Action) isFirstPR() bool {
+	jsonData := map[string]string{
+		"query": `
+            {
+			  user(login: "` + a.actor + `") {
+				contributionsCollection {
+				  commitContributionsByRepository(maxRepositories: 100) {
+					contributions {
+					  totalCount
+					}
+					repository {
+					  owner {
+						login
+					  }
+					  name
+					}
+				  }
+				}
+			  }
+			}
+        `,
+	}
+	jsonValue, _ := json.Marshal(jsonData)
+	request, err := http.NewRequest("POST", "https://api.github.com/graphql", bytes.NewBuffer(jsonValue))
+	request.Header.Set("Authorization", "Bearer "+*a.config.token)
+
+	client := &http.Client{Timeout: time.Second * 10}
+	response, err := client.Do(request)
+	defer response.Body.Close()
+
+	if err != nil {
+		logger.Errorf("The HTTP request failed with error %s\n", err)
+		return false
+	}
+	data, _ := io.ReadAll(response.Body)
+	// just search string
+	expected := `"repository":{"owner":{"login":"apache"},"name":"pulsar"}`
+	return strings.Contains(string(data), expected)
 }
