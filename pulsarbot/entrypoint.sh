@@ -3,6 +3,7 @@ if [[ $TESTMODE == 1 ]]; then
     set -x
     cat ${GITHUB_EVENT_PATH}
 fi
+set -x
 set -e
 
 COMMENT_BODY=$(jq -r '.comment.body' "${GITHUB_EVENT_PATH}")
