@@ -4,5 +4,5 @@ author: 'Lari Hotari'
 branding:
   icon: 'terminal'
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'install.js'
