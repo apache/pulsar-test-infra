@@ -10,5 +10,5 @@ inputs:
     default: '12321'
 
 runs:
-  using: 'node12'
+  using: 'node20'
   main: 'dist/index.js'
