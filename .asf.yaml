@@ -1,10 +1,9 @@
 github:
-  description: "Testing infrastructure for Apache Pulsar"
+  description: "Apache Pulsar CI Tooling"
   homepage: https://pulsar.apache.org/
   labels:
     - pulsar
-    - pubsub
-    - test-infra
+    - ci
   features:
     # Enable wiki for documentation
     wiki: true
