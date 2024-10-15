@@ -14,28 +14,17 @@ require('yargs')
           description: 'retention days',
           type: 'number',
           default: 1
-        })
-        .option('partSize', {
-          alias: 'p',
-          description: 'multi-part file size in bytes. defaults to 256MB',
-          type: 'number',
-          default: 256 * 1024 * 1024
-        })
-        .option('chunkSize', {
-          description:
-            'upload chunk size in bytes. defaults to 8MB. Maximum size is 8MB.',
-          type: 'number',
-          default: 8 * 1024 * 1024
+        }).option('contentType', {
+          description: 'Content type',
+          type: 'string',
+          default: 'application/octet-stream'
         }),
     handler: argv => {
       const artifactName = argv.artifactName
-      const ExtendedUploadHttpClient = require('./upload-http-client.js')
-      const uploadHttpClient = new ExtendedUploadHttpClient({
-        partSize: argv.partSize,
-        chunkSize: argv.chunkSize
-      })
+      const uploadHttpClient = require('./upload-http-client.js')
       uploadHttpClient.uploadStream(artifactName, process.stdin, {
-        retentionDays: argv.retentionDays
+        retentionDays: argv.retentionDays,
+        contentType: argv.contentType
       })
     }
   })
@@ -50,25 +39,24 @@ require('yargs')
       }),
     handler: argv => {
       const artifactName = argv.artifactName
-      const ExtendedDownloadHttpClient = require('./download-http-client.js')
-      const downloadHttpClient = new ExtendedDownloadHttpClient()
+      const downloadHttpClient = require('./download-http-client.js')
       downloadHttpClient.downloadStream(artifactName, process.stdout)
     }
   })
   .command({
-    command: 'delete <artifactNamePattern>',
-    desc: 'delete artifacts matching the regex pattern',
+    command: 'delete <artifactName>',
+    desc: 'delete an artifact',
     builder: yargs =>
-      yargs.positional('artifactNamePattern', {
+      yargs.positional('artifactName', {
         type: 'string',
-        describe: 'artifact name (regex pattern)',
+        describe: 'artifact name',
         demandOption: 'true'
       }),
     handler: argv => {
-      const DeleteHttpClient = require('./delete-http-client.js')
-      const downloadHttpClient = new DeleteHttpClient()
-      downloadHttpClient.deleteArtifacts(new RegExp(argv.artifactNamePattern))
+      const deleteHttpClient = require('./delete-http-client.js')
+      deleteHttpClient.deleteArtifact(argv.artifactName)
     }
   })
   .help()
   .alias('help', 'h').argv
+  

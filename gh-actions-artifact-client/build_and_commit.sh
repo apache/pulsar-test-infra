@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 ACTIONS_CORE_JS_FILE=./node_modules/@actions/core/lib/core.js
 if ! grep -q '//#patched' $ACTIONS_CORE_JS_FILE; then
   echo '//#patched' >> $ACTIONS_CORE_JS_FILE
@@ -9,4 +10,7 @@ if ! grep -q '//#patched' $ACTIONS_CORE_JS_FILE; then
       echo "exports.${key}=(message) => process.stderr.write(message + os.EOL);" >> $ACTIONS_CORE_JS_FILE
   done
 fi
-npm run package  && git add dist/* && git commit -m 'Build'
+npm run package
+if [[ "$1" != "--no-commit" ]]; then
+  git add dist/* && git commit -m 'Build'
+fi

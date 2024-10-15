@@ -1,54 +1,56 @@
 import * as process from 'process'
-import * as cp from 'child_process'
-import * as path from 'path'
-import {expect, test} from '@jest/globals'
+import { expect, test } from '@jest/globals'
 const stream = require('stream')
 const nock = require('nock')
-const ExtendedDownloadHttpClient = require('../src/download-http-client.js')
+const { downloadStream } = require('../src/download-http-client.js')
+const { getBackendIdsFromToken } = require('@actions/artifact/lib/internal/shared/util');
+
+const testRuntimeToken =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwic2NwIjoiQWN0aW9ucy5FeGFtcGxlIEFjdGlvbnMuQW5vdGhlckV4YW1wbGU6dGVzdCBBY3Rpb25zLlJlc3VsdHM6Y2U3ZjU0YzctNjFjNy00YWFlLTg4N2YtMzBkYTQ3NWY1ZjFhOmNhMzk1MDg1LTA0MGEtNTI2Yi0yY2U4LWJkYzg1ZjY5Mjc3NCIsImlhdCI6MTUxNjIzOTAyMn0.XYnI_wHPBlUi1mqYveJnnkJhp4dlFjqxzRmISPsqfw8'
 
 test('download test', async () => {
-  process.env.ACTIONS_RUNTIME_TOKEN = 'token'
+  process.env.ACTIONS_RUNTIME_TOKEN = testRuntimeToken
   process.env.ACTIONS_RUNTIME_URL = 'http://localhost:12345/test'
+  process.env.ACTIONS_RESULTS_URL = 'http://localhost:12345/results'
   process.env.GITHUB_RUN_ID = 123
 
+  const { workflowRunBackendId, workflowJobRunBackendId } = getBackendIdsFromToken();
+
   const mockserver = nock('http://localhost:12345').persist()
+  mockserver
+    .get('/download')
+    .reply(200, 'Hello, world!', {
+      'Content-Length': 13
+    })
 
   mockserver
-    .get('/test_apis/pipelines/workflows/123/artifacts?api-version=6.0-preview')
+    .post('/twirp/github.actions.results.api.v1.ArtifactService/ListArtifacts')
     .reply(200, {
-      value: [
+      artifacts: [
         {
-          name: 'test',
-          fileContainerResourceUrl: 'http://localhost:12345/fileContainer'
+          workflowRunBackendId: workflowRunBackendId,
+          workflowJobRunBackendId: workflowJobRunBackendId,
+          name: 'test'
         }
       ]
     })
-  mockserver.get('/fileContainer?itemPath=test').reply(200, {
-    value: [
-      {
-        itemType: 'file',
-        path: 'test/part000',
-        contentLocation: 'http://localhost:12345/fileContent0'
-      },
-      {
-        itemType: 'file',
-        path: 'test/part001',
-        contentLocation: 'http://localhost:12345/fileContent1'
-      }
-    ]
-  })
-  mockserver.get('/fileContent0').reply(200, 'Hello', {
-    'Content-Length': (req, res, body) => body.length
-  })
-  mockserver.get('/fileContent1').reply(200, ' world!', {
-    'Content-Length': (req, res, body) => body.length
-  })
+
+  mockserver
+    .post('/twirp/github.actions.results.api.v1.ArtifactService/GetSignedArtifactURL')
+    .query(true)
+    .reply(200, {
+      signedUrl: 'http://localhost:12345/download'
+    })
+
   const artifactName = 'test'
-  const downloadHttpClient = new ExtendedDownloadHttpClient(2000)
-  var testOutput = new stream.Writable()
+  const testOutput = new stream.Writable()
+  let downloadedContent = ''
   testOutput._write = function (chunk, encoding, done) {
-    console.error(`output: '${chunk.toString()}'`)
+    downloadedContent += chunk.toString()
     done()
   }
-  await downloadHttpClient.downloadStream(artifactName, testOutput)
+
+  await downloadStream(artifactName, testOutput)
+
+  expect(downloadedContent).toBe('Hello, world!')
 })

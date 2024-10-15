@@ -1,49 +1,46 @@
-const utils = require('@actions/artifact/lib/internal/utils.js')
+const { debug, info } = require('@actions/core');
+const { internalArtifactTwirpClient } = require('@actions/artifact/lib/internal/shared/artifact-twirp-client');
+const { getBackendIdsFromToken } = require('@actions/artifact/lib/internal/shared/util');
+const { StringValue } = require('@actions/artifact/lib/generated');
+const { ArtifactNotFoundError } = require('@actions/artifact/lib/internal/shared/errors');
 
-class DeleteHttpClient {
-  async deleteArtifacts(artifactNamePattern) {
-    const httpClient = utils.createHttpClient('@actions/artifact-download')
-    try {
-      const artifacts = await this.listArtifacts(httpClient)
-      if (artifacts.count === 0) {
-        throw new Error(
-          `Unable to find any artifacts for the associated workflow`
-        )
-      }
-      const artifactsToDelete = artifacts.value.filter(artifact => {
-        return artifact.name.match(artifactNamePattern)
-      })
-      if (!artifactsToDelete) {
-        throw new Error(
-          `Unable to find artifacts matching ${artifactNamePattern}`
-        )
-      }
+async function deleteArtifact(artifactName) {
+  const artifactClient = internalArtifactTwirpClient();
+  const { workflowRunBackendId, workflowJobRunBackendId } = getBackendIdsFromToken();
 
-      for (const artifactToDelete of artifactsToDelete) {
-        await this.deleteArtifact(
-          httpClient,
-          artifactToDelete.name,
-          artifactToDelete.url
-        )
-      }
-    } finally {
-      httpClient.dispose()
-    }
+  // List artifacts to find the one we want to delete
+  const listReq = {
+    workflowRunBackendId,
+    workflowJobRunBackendId,
+    nameFilter: StringValue.create({ value: artifactName })
+  };
+  const listRes = await artifactClient.ListArtifacts(listReq);
+
+  if (listRes.artifacts.length === 0) {
+    throw new ArtifactNotFoundError(`Artifact not found for name: ${artifactName}`);
   }
 
-  async listArtifacts(httpClient) {
-    const artifactUrl = utils.getArtifactUrl()
-    const headers = utils.getDownloadHeaders()
-    const response = await httpClient.get(artifactUrl, headers)
-    const body = await response.readBody()
-    return JSON.parse(body)
+  let artifact = listRes.artifacts[0];
+  if (listRes.artifacts.length > 1) {
+    artifact = listRes.artifacts.sort((a, b) => Number(b.databaseId) - Number(a.databaseId))[0];
+    debug(`More than one artifact found for a single name, returning newest (id: ${artifact.databaseId})`);
   }
 
-  async deleteArtifact(httpClient, artifactName, artifactLocation) {
-    const headers = utils.getDownloadHeaders()
-    console.log(`Deleting ${artifactName} at ${artifactLocation}`)
-    await httpClient.del(artifactLocation, headers)
-  }
+  // Delete the artifact
+  const deleteReq = {
+    workflowRunBackendId: artifact.workflowRunBackendId,
+    workflowJobRunBackendId: artifact.workflowJobRunBackendId,
+    name: artifact.name
+  };
+  const deleteRes = await artifactClient.DeleteArtifact(deleteReq);
+
+  info(`Artifact '${artifactName}' (ID: ${deleteRes.artifactId}) deleted`);
+
+  return {
+    artifactId: Number(deleteRes.artifactId)
+  };
 }
 
-module.exports = DeleteHttpClient
+module.exports = {
+  deleteArtifact
+};

@@ -7,7 +7,7 @@ async function run() {
   )
   fs.appendFileSync(
     process.env.GITHUB_ENV,
-    `ACTIONS_RUNTIME_TOKEN<<EOF\n${process.env.ACTIONS_RUNTIME_TOKEN}\nEOF\nACTIONS_RUNTIME_URL<<EOF\n${process.env.ACTIONS_RUNTIME_URL}\nEOF\n`
+    `ACTIONS_RESULTS_URL<<EOF\n${process.env.ACTIONS_RESULTS_URL}\nEOF\nACTIONS_RUNTIME_TOKEN<<EOF\n${process.env.ACTIONS_RUNTIME_TOKEN}\nEOF\nACTIONS_RUNTIME_URL<<EOF\n${process.env.ACTIONS_RUNTIME_URL}\nEOF\n`
   )
   console.log(
     'Copy index.js to location in path as gh-actions-artifact-client.js'
