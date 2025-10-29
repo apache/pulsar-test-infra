@@ -50,6 +50,9 @@ function github_client() {
 
 # get head sha
 PR_JSON="$(github_get "/pulls/${PR_NUM}")"
+
+echo "PR JSON: ${PR_JSON}"
+
 HEAD_SHA=$(printf "%s" "${PR_JSON}" | jq -r .head.sha)
 PR_BRANCH_URL_ENCODED=$(printf "%s" "${PR_JSON}" | jq -r '.head.ref | @uri')
 PR_USER=$(printf "%s" "${PR_JSON}" | jq -r .head.user.login)
