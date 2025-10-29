@@ -55,7 +55,7 @@ echo "PR JSON: ${PR_JSON}"
 
 HEAD_SHA=$(printf "%s" "${PR_JSON}" | jq -r .head.sha)
 PR_BRANCH_URL_ENCODED=$(printf "%s" "${PR_JSON}" | jq -r '.head.ref | @uri')
-PR_USER=$(printf "%s" "${PR_JSON}" | jq -r .head.user.login)
+PR_USER=$(printf "%s" "${PR_JSON}" | jq -r .user.login)
 PR_HTML_URL=$(printf "%s" "${PR_JSON}" | jq -r .html_url)
 
 echo "Handling pulsarbot command for PR #${PR_NUM} ${PR_HTML_URL}"
