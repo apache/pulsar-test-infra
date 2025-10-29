@@ -51,7 +51,7 @@ function github_client() {
 # get head sha
 PR_JSON="$(github_get "/pulls/${PR_NUM}")"
 HEAD_SHA=$(printf "%s" "${PR_JSON}" | jq -r .head.sha)
-PR_BRANCH=$(printf "%s" "${PR_JSON}" | jq -r .head.ref)
+PR_BRANCH_URL_ENCODED=$(printf "%s" "${PR_JSON}" | jq -r '.head.ref | @uri')
 PR_USER=$(printf "%s" "${PR_JSON}" | jq -r .head.user.login)
 PR_HTML_URL=$(printf "%s" "${PR_JSON}" | jq -r .html_url)
 
@@ -60,7 +60,7 @@ echo "Handling pulsarbot command for PR #${PR_NUM} ${PR_HTML_URL}"
 function get_runs() {
     local page="${1:-1}"
     # API reference https://docs.github.com/en/rest/reference/actions#list-workflow-runs-for-a-repository
-    github_get "/actions/runs?actor=${PR_USER}&branch=${PR_BRANCH}&page=${page}&per_page=100" \
+    github_get "/actions/runs?actor=${PR_USER}&branch=${PR_BRANCH_URL_ENCODED}&page=${page}&per_page=100" \
     | jq -r --arg head_sha "${HEAD_SHA}" \
         '.workflow_runs[] | select(.head_sha==$head_sha) | [.workflow_id,.created_at,.conclusion // .status,.url,.name,.html_url] | @csv' \
         || true
