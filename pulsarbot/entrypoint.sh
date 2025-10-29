@@ -104,8 +104,8 @@ function get_all_runs() {
 # return url and name for failed or cancelled jobs that are the most recent ones for each workflow
 function find_failed_or_cancelled() {
     local all_runs=$(get_all_runs)
-    echo "All runs:"
-    echo "$all_runs"
+    echo >&2 "All runs:"
+    echo >&2 "$all_runs"
     printf "%s" "$all_runs" | filter_oldruns \
       | awk '
       BEGIN { FPAT="([^,]+)|(\"[^\"]+\")" } 
